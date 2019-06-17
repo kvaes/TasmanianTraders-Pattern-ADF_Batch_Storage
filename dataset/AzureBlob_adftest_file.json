@@ -1,6 +1,10 @@
 {
 	"name": "AzureBlob_adftest_file",
 	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureBlobStorage_kvaesadftest",
+			"type": "LinkedServiceReference"
+		},
 		"parameters": {
 			"InputFolder": {
 				"type": "string",
