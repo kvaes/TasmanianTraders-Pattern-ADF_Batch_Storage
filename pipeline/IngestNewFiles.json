@@ -8,11 +8,27 @@
 				"typeProperties": {
 					"waitTimeInSeconds": 10
 				}
+			},
+			{
+				"name": "Set Prefix file for Ingest Workload",
+				"type": "SetVariable",
+				"typeProperties": {
+					"variableName": "Prefix",
+					"value": {
+						"value": "@replace(pipeline().parameters.TriggerInputFile,'.done','')",
+						"type": "Expression"
+					}
+				}
 			}
 		],
 		"parameters": {
 			"TriggerInputFile": {
 				"type": "string"
+			}
+		},
+		"variables": {
+			"Prefix": {
+				"type": "String"
 			}
 		}
 	}
