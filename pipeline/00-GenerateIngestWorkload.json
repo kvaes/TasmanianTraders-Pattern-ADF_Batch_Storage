@@ -76,6 +76,10 @@
 					}
 				],
 				"typeProperties": {
+					"items": {
+						"value": "@activity('FilterItems').output.value",
+						"type": "Expression"
+					},
 					"activities": [
 						{
 							"name": "Copy Sample File",
