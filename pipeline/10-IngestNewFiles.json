@@ -1,5 +1,5 @@
 {
-	"name": "IngestNewFiles",
+	"name": "10-IngestNewFiles",
 	"properties": {
 		"activities": [
 			{
