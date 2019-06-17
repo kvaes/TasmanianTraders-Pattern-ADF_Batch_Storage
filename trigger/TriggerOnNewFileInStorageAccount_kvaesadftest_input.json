@@ -1,0 +1,22 @@
+{
+	"name": "TriggerOnNewFileInStorageAccount_kvaesadftest_input",
+	"properties": {
+		"runtimeState": "Started",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pipeline1",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"TriggerInputFile": "@triggerBody().fileName"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/input/blobs/",
+			"scope": "/subscriptions/be7a25e9-46d2-4e21-bbd1-5e8d3e49cc1e/resourceGroups/kvaes-test-ADF/providers/Microsoft.Storage/storageAccounts/kvaesadftest"
+		}
+	}
+}
