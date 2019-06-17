@@ -1,12 +1,12 @@
 {
-	"name": "pipeline1",
+	"name": "IngestNewFiles",
 	"properties": {
 		"activities": [
 			{
 				"name": "Wait1",
 				"type": "Wait",
 				"typeProperties": {
-					"waitTimeInSeconds": 1
+					"waitTimeInSeconds": 10
 				}
 			}
 		],
