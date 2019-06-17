@@ -5,7 +5,7 @@
 		"pipelines": [
 			{
 				"pipelineReference": {
-					"referenceName": "IngestNewFiles",
+					"referenceName": "10-IngestNewFiles",
 					"type": "PipelineReference"
 				},
 				"parameters": {
