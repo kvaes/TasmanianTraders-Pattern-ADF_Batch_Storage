@@ -1,0 +1,30 @@
+{
+	"$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"value": "kvaestest"
+		},
+		"AzureBlobStorage_kvaesadftest_connectionString": {
+			"value": ""
+		},
+		"TriggerOnNewFileInStorageAccount_kvaesadftest_input_extension_done_properties_typeProperties_scope": {
+			"value": "/subscriptions/be7a25e9-46d2-4e21-bbd1-5e8d3e49cc1e/resourceGroups/kvaes-test-ADF/providers/Microsoft.Storage/storageAccounts/kvaesadftest"
+		},
+		"AzureBlob_adftest_input_properties_typeProperties_folderPath": {
+			"value": "@dataset().InputFolder"
+		},
+		"AzureBlob_adftest_file_properties_typeProperties_fileName": {
+			"value": "@dataset().InputFile"
+		},
+		"AzureBlob_adftest_file_properties_typeProperties_folderPath": {
+			"value": "@dataset().InputFolder"
+		},
+		"containerUri": {
+			"value": ""
+		},
+		"containerSasToken": {
+			"value": ""
+		}
+	}
+}

@@ -1,0 +1,378 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory Name",
+			"defaultValue": "kvaestest"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/00-GenerateIngestWorkload')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Files from Sample Workload",
+						"type": "GetMetadata",
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "AzureBlob_adftest_input",
+								"type": "DatasetReference",
+								"parameters": {
+									"InputFolder": {
+										"value": "@variables('VarStorageSamplesContainer')",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					},
+					{
+						"name": "Set Workload Name",
+						"type": "SetVariable",
+						"typeProperties": {
+							"variableName": "VarWorkloadGuid",
+							"value": {
+								"value": "@guid()",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "FilterItems",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Get Files from Sample Workload",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Set Workload Name",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Get Files from Sample Workload').output.childitems",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@and(\nequals(item().type, 'File'),\nequals(item().type, 'File')\n)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Copy Sample Workload",
+						"type": "ForEach",
+						"dependsOn": [
+							{
+								"activity": "FilterItems",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('FilterItems').output.value",
+								"type": "Expression"
+							},
+							"activities": [
+								{
+									"name": "Copy Sample File",
+									"type": "Copy",
+									"policy": {
+										"timeout": "7.00:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"typeProperties": {
+										"source": {
+											"type": "BlobSource",
+											"recursive": true
+										},
+										"sink": {
+											"type": "BlobSink"
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "AzureBlob_adftest_file",
+											"type": "DatasetReference",
+											"parameters": {
+												"InputFolder": {
+													"value": "@variables('VarStorageSamplesContainer')",
+													"type": "Expression"
+												},
+												"InputFile": {
+													"value": "@item().name",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "AzureBlob_adftest_file",
+											"type": "DatasetReference",
+											"parameters": {
+												"InputFolder": {
+													"value": "@variables('VarStorageStagingContainer')",
+													"type": "Expression"
+												},
+												"InputFile": {
+													"value": "@concat(variables('VarWorkloadGuid'),'-',item().name)",
+													"type": "Expression"
+												}
+											}
+										}
+									]
+								}
+							]
+						}
+					},
+					{
+						"name": "Copy Barrier File with extension done",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Copy Sample Workload",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"typeProperties": {
+							"source": {
+								"type": "BlobSource",
+								"recursive": true
+							},
+							"sink": {
+								"type": "BlobSink"
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "AzureBlob_adftest_file",
+								"type": "DatasetReference",
+								"parameters": {
+									"InputFolder": {
+										"value": "@variables('VarStorageSamplesContainer')",
+										"type": "Expression"
+									},
+									"InputFile": "sample.done"
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "AzureBlob_adftest_file",
+								"type": "DatasetReference",
+								"parameters": {
+									"InputFolder": {
+										"value": "@variables('VarStorageStagingContainer')",
+										"type": "Expression"
+									},
+									"InputFile": {
+										"value": "@concat(variables('VarWorkloadGuid'),'.done')",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					}
+				],
+				"variables": {
+					"VarStorageStagingContainer": {
+						"type": "String",
+						"defaultValue": "input"
+					},
+					"VarStorageProcessedContainer": {
+						"type": "String",
+						"defaultValue": "processed"
+					},
+					"VarStorageSamplesContainer": {
+						"type": "String",
+						"defaultValue": "samples"
+					},
+					"VarWorkloadGuid": {
+						"type": "String",
+						"defaultValue": "noguidgenerated"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/AzureBlob_adftest_input')]",
+				"[concat(variables('factoryId'), '/datasets/AzureBlob_adftest_file')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/10-IngestNewFiles')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Wait1",
+						"type": "Wait",
+						"typeProperties": {
+							"waitTimeInSeconds": 10
+						}
+					},
+					{
+						"name": "Set Prefix file for Ingest Workload",
+						"type": "SetVariable",
+						"typeProperties": {
+							"variableName": "Prefix",
+							"value": {
+								"value": "@replace(pipeline().parameters.TriggerInputFile,'.done','')",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"parameters": {
+					"TriggerInputFile": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"Prefix": {
+						"type": "String"
+					}
+				}
+			}
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TriggerEveryHour')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "00-GenerateIngestWorkload",
+							"type": "PipelineReference"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Hour",
+						"interval": 1,
+						"startTime": "2019-06-17T12:30:00.000Z",
+						"timeZone": "UTC"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/00-GenerateIngestWorkload')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/TriggerOnNewFileInStorageAccount_kvaesadftest_input_extension_done')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"runtimeState": "Started",
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/input/blobs/",
+					"blobPathEndsWith": ".done",
+					"scope": "/subscriptions/be7a25e9-46d2-4e21-bbd1-5e8d3e49cc1e/resourceGroups/kvaes-test-ADF/providers/Microsoft.Storage/storageAccounts/kvaesadftest",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			}
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBlob_adftest_input')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage_kvaesadftest",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"InputFolder": {
+						"type": "string",
+						"defaultValue": "input"
+					}
+				},
+				"type": "AzureBlob",
+				"typeProperties": {
+					"folderPath": {
+						"value": "@dataset().InputFolder",
+						"type": "Expression"
+					}
+				}
+			}
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/AzureBlob_adftest_file')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureBlobStorage_kvaesadftest",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"InputFolder": {
+						"type": "string",
+						"defaultValue": "samples"
+					},
+					"InputFile": {
+						"type": "string",
+						"defaultValue": "sample.done"
+					}
+				},
+				"type": "AzureBlob",
+				"typeProperties": {
+					"fileName": {
+						"value": "@dataset().InputFile",
+						"type": "Expression"
+					},
+					"folderPath": {
+						"value": "@dataset().InputFolder",
+						"type": "Expression"
+					}
+				}
+			}
+		}
+	]
+}
